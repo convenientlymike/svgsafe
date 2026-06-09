@@ -3,11 +3,18 @@ name: CI
 # Cross-OS by default: svgsafe must run on macOS, Linux, and Windows, so the full
 # matrix is the gate. `render` drives an installed Chrome (provided here by
 # setup-chrome on every OS — never downloaded by svgsafe itself).
+#
+# Cost guardrails (macOS bills 10×, Windows 2× — free on this public repo, but the habit
+# is the point): docs-only changes skip CI, and a new push cancels the superseded run.
 on:
   push:
     branches: [main]
+    paths-ignore: ["**.md", "docs/**", "LICENSE", ".gitignore"]
   pull_request:
     branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
