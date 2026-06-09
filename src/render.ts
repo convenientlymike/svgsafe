@@ -101,6 +101,12 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
         "--default-background-color=00000000", // transparent RGBA
         `--force-device-scale-factor=${scale}`,
         `--window-size=${Math.round(w)},${Math.round(h)}`,
+        // Bound the wait: new headless otherwise blocks until the page is fully
+        // "loaded" (e.g. waiting on unresolved system fonts on a clean runner) and
+        // never captures/exits. virtual-time advances the page clock and forces a
+        // capture, so Chrome reliably screenshots and quits within the budget.
+        "--virtual-time-budget=10000",
+        "--run-all-compositor-stages-before-draw",
         `--screenshot=${workPng}`,
         pathToFileURL(workSvg).href,
       ],
