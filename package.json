@@ -1,0 +1,41 @@
+{
+  "name": "svgsafe",
+  "version": "0.1.0",
+  "description": "Make SVGs render everywhere — diagnose the iOS/WebKit clipping traps, auto-fix them, or rasterize to a crisp transparent PNG. Zero runtime dependencies.",
+  "keywords": [
+    "svg",
+    "png",
+    "webkit",
+    "ios",
+    "safari",
+    "viewbox",
+    "foreignobject",
+    "rasterize",
+    "cli",
+    "readme"
+  ],
+  "license": "MIT",
+  "author": "convenientlymike",
+  "type": "module",
+  "bin": {
+    "svgsafe": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').chmodSync('dist/cli.js',0o755)\"",
+    "prepare": "npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/svgsafe.test.ts",
+    "dev": "tsx src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

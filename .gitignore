@@ -1,0 +1,28 @@
+# Build output (rebuilt by `prepare` / `npm run build`; shipped via package.json "files")
+dist/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Secrets / credentials — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Logs / temp / coverage
+*.log
+coverage/
+*.tmp
+tmp/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
