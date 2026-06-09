@@ -142,7 +142,14 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
     } catch {
       /* already closed */
     }
-    rmSync(profile, { recursive: true, force: true });
+    // Best-effort: Chrome's helper/crashpad processes can briefly outlive the main
+    // process and keep writing to the profile dir, racing our cleanup (ENOTEMPTY /
+    // EBUSY). Retry, and never let a temp-cleanup failure fail a successful render.
+    try {
+      rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    } catch {
+      /* leftover temp dir; the OS reclaims it */
+    }
   }
 
   const png = inspectPng(out);
