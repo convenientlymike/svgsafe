@@ -95,7 +95,11 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
     execFileSync(
       chrome,
       [
-        "--headless=new",
+        // OLD headless: it honors the `--screenshot` CLI shortcut and
+        // `--virtual-time-budget`, capturing and exiting immediately. NEW headless
+        // launches a full browser that ignores virtual-time and never exits after
+        // --screenshot (it even starts GCM/push registration) → hang.
+        "--headless=old",
         "--disable-gpu",
         "--no-sandbox",
         "--disable-dev-shm-usage", // small /dev/shm on CI/containers hangs Chrome
