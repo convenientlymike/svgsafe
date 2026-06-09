@@ -38,16 +38,23 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Install Google Chrome STABLE (what real users have), not the bleeding-edge
-      # chromium snapshot — the snapshot has dropped old-headless and won't exit
-      # after a CLI --screenshot. svgsafe never downloads a browser itself.
+      # svgsafe drives an installed Chrome over CDP (never downloads one).
       - name: Install Chrome stable (for the render smoke)
         id: chrome
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
 
-      - name: Test
+      # On macOS the setup-chrome *chromium* build has a headless Mach-port IPC bug
+      # ("No rendezvous client"); use the runner's preinstalled real Google Chrome.
+      - name: Test (macOS → real Google Chrome)
+        if: runner.os == 'macOS'
+        run: pnpm test
+        env:
+          SVGSAFE_CHROME: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+
+      - name: Test (Linux/Windows → setup-chrome)
+        if: runner.os != 'macOS'
         run: pnpm test
         env:
           SVGSAFE_CHROME: ${{ steps.chrome.outputs.chrome-path }}

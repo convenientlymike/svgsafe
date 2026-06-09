@@ -68,30 +68,22 @@ test("fix leaves a clean icon untouched", () => {
   assert.equal(fix(ICON).changed, false);
 });
 
-// macOS CI runners block headless Chrome on a keychain/login-session prompt that
-// has no GUI to answer (it hangs, ignoring SIGTERM). render is verified on the
-// Linux + Windows CI runners and locally on macOS, so we skip only the live
-// screenshot there — the pure doctor/fix logic above still runs on every OS.
-const renderSkip =
-  process.platform === "darwin" && process.env.CI
-    ? "live render skipped on macOS CI (headless Chrome blocks on the runner keychain); verified on Linux + Windows CI and locally"
-    : resolveChrome()
-      ? false
-      : "no Chrome/Chromium found";
+// The CDP renderer (explicit Browser.close, no --screenshot CLI) is version-proof,
+// so it runs on every OS where a Chrome exists — including macOS CI.
+const renderSkip = resolveChrome() ? false : "no Chrome/Chromium found";
 
-test("render produces a transparent PNG", { skip: renderSkip }, () => {
-    const dir = mkdtempSync(join(tmpdir(), "svgsafe-test-"));
-    try {
-      const svg = join(dir, "in.svg");
-      writeFileSync(
-        svg,
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 30" width="40" height="30"><rect width="40" height="30" rx="6" fill="#22d3ee"/></svg>`,
-      );
-      const r = render(svg, { scale: 2 });
-      assert.equal(r.width, 80); // 40 * scale 2
-      assert.equal(r.height, 60);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  },
-);
+test("render produces a transparent PNG", { skip: renderSkip }, async () => {
+  const dir = mkdtempSync(join(tmpdir(), "svgsafe-test-"));
+  try {
+    const svg = join(dir, "in.svg");
+    writeFileSync(
+      svg,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 30" width="40" height="30"><rect width="40" height="30" rx="6" fill="#22d3ee"/></svg>`,
+    );
+    const r = await render(svg, { scale: 2 });
+    assert.equal(r.width, 80); // 40 * scale 2
+    assert.equal(r.height, 60);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

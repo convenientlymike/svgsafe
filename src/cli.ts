@@ -133,8 +133,8 @@ function cmdFix(file: string, write: boolean): number {
   return 0;
 }
 
-function cmdRender(file: string, p: ParsedArgs): number {
-  const r = render(file, { scale: p.scale, out: p.out, chrome: p.chrome });
+async function cmdRender(file: string, p: ParsedArgs): Promise<number> {
+  const r = await render(file, { scale: p.scale, out: p.out, chrome: p.chrome });
   process.stdout.write(
     `${paint("✓", C.green)} ${paint(r.out, C.bold)}  ${r.width}×${r.height} transparent PNG\n` +
       paint(`  via ${r.chrome}\n`, C.dim),
@@ -142,7 +142,7 @@ function cmdRender(file: string, p: ParsedArgs): number {
   return 0;
 }
 
-function main(argv: string[]): number {
+async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
   if (cmd == null || cmd === "-h" || cmd === "--help" || cmd === "help") {
     usage();
@@ -167,9 +167,9 @@ function main(argv: string[]): number {
   return cmdRender(p.file, p);
 }
 
-try {
-  process.exit(main(process.argv.slice(2)));
-} catch (err) {
-  process.stderr.write(paint(`error: ${(err as Error).message}\n`, C.red));
-  process.exit(1);
-}
+main(process.argv.slice(2))
+  .then((code) => process.exit(code))
+  .catch((err) => {
+    process.stderr.write(paint(`error: ${(err as Error).message}\n`, C.red));
+    process.exit(1);
+  });
