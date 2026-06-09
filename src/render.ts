@@ -8,7 +8,7 @@
  * when downscaled on Retina displays.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, existsSync, rmSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -73,6 +73,14 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
   }
 
   const profile = mkdtempSync(join(tmpdir(), "svgsafe-"));
+  // Chrome only ever touches $TMPDIR — never the input/output directory. On macOS
+  // that avoids a TCC "<browser> would like to access files in your Desktop/
+  // Documents/Downloads folder" prompt (which blocks a headless launch). We copy
+  // the SVG in, render to a temp PNG, then move it out with Node (which already
+  // has the caller's file permissions).
+  const workSvg = join(profile, "input.svg");
+  const workPng = join(profile, "output.png");
+  copyFileSync(input, workSvg);
   try {
     execFileSync(
       chrome,
@@ -80,23 +88,35 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
         "--headless=new",
         "--disable-gpu",
         "--no-sandbox",
+        "--disable-dev-shm-usage", // small /dev/shm on CI/containers hangs Chrome
+        "--no-first-run",
+        "--no-default-browser-check",
+        // Don't touch the OS keychain. On macOS a fresh profile otherwise pops a
+        // password prompt for "Chrome Safe Storage" and BLOCKS the headless launch
+        // (it hangs until dismissed). A mock keychain skips that entirely.
+        "--use-mock-keychain",
+        "--password-store=basic",
         "--hide-scrollbars",
         `--user-data-dir=${profile}`,
         "--default-background-color=00000000", // transparent RGBA
         `--force-device-scale-factor=${scale}`,
         `--window-size=${Math.round(w)},${Math.round(h)}`,
-        `--screenshot=${out}`,
-        pathToFileURL(input).href,
+        `--screenshot=${workPng}`,
+        pathToFileURL(workSvg).href,
       ],
-      { stdio: ["ignore", "ignore", "pipe"] },
+      // Discard ALL stdio: Linux headless Chrome floods stderr, and a piped
+      // buffer that fills would deadlock the child (it blocks writing while we
+      // block waiting). A timeout is a belt-and-suspenders against any hang.
+      { stdio: "ignore", timeout: 120_000 },
     );
+    if (!existsSync(workPng)) throw new Error("Chrome produced no output PNG");
+    copyFileSync(workPng, out); // move it out of $TMPDIR with the caller's perms
   } catch (err) {
     throw new Error(`Chrome failed to render: ${(err as Error).message}`);
   } finally {
     rmSync(profile, { recursive: true, force: true });
   }
 
-  if (!existsSync(out)) throw new Error("Chrome produced no output PNG");
   const png = inspectPng(out);
   if (!png.rgba) {
     throw new Error("output PNG is not transparent (RGBA) — transparency was lost");
