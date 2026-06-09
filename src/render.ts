@@ -8,7 +8,15 @@
  * when downscaled on Retina displays.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, existsSync, rmSync, copyFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  existsSync,
+  rmSync,
+  copyFileSync,
+  openSync,
+  closeSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -80,7 +88,9 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
   // has the caller's file permissions).
   const workSvg = join(profile, "input.svg");
   const workPng = join(profile, "output.png");
+  const logPath = join(profile, "chrome.log");
   copyFileSync(input, workSvg);
+  const logFd = openSync(logPath, "w");
   try {
     execFileSync(
       chrome,
@@ -110,16 +120,28 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
         `--screenshot=${workPng}`,
         pathToFileURL(workSvg).href,
       ],
-      // Discard ALL stdio: Linux headless Chrome floods stderr, and a piped
-      // buffer that fills would deadlock the child (it blocks writing while we
-      // block waiting). A timeout is a belt-and-suspenders against any hang.
-      { stdio: "ignore", timeout: 120_000 },
+      // stderr -> a FILE (not a pipe): captures Chrome's diagnostics without the
+      // pipe-buffer deadlock a flood of stderr would cause. timeout is a backstop
+      // so a wedged Chrome can't hang forever.
+      { stdio: ["ignore", "ignore", logFd], timeout: 45_000 },
     );
     if (!existsSync(workPng)) throw new Error("Chrome produced no output PNG");
     copyFileSync(workPng, out); // move it out of $TMPDIR with the caller's perms
   } catch (err) {
-    throw new Error(`Chrome failed to render: ${(err as Error).message}`);
+    let detail = (err as Error).message;
+    try {
+      const log = readFileSync(logPath, "utf8").trim();
+      if (log) detail += "\n  chrome: " + log.split("\n").slice(-4).join("\n  chrome: ");
+    } catch {
+      /* no log captured */
+    }
+    throw new Error(`Chrome failed to render: ${detail}`);
   } finally {
+    try {
+      closeSync(logFd);
+    } catch {
+      /* already closed */
+    }
     rmSync(profile, { recursive: true, force: true });
   }
 
