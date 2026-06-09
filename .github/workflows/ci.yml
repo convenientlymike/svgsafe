@@ -37,9 +37,14 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Install Chrome (for the render smoke — cross-OS, no download by svgsafe)
+      # Install Google Chrome STABLE (what real users have), not the bleeding-edge
+      # chromium snapshot — the snapshot has dropped old-headless and won't exit
+      # after a CLI --screenshot. svgsafe never downloads a browser itself.
+      - name: Install Chrome stable (for the render smoke)
         id: chrome
         uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
 
       - name: Test
         run: pnpm test
