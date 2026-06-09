@@ -127,7 +127,9 @@ export function render(svgPath: string, opts: RenderOptions = {}): RenderResult 
       // stderr -> a FILE (not a pipe): captures Chrome's diagnostics without the
       // pipe-buffer deadlock a flood of stderr would cause. timeout is a backstop
       // so a wedged Chrome can't hang forever.
-      { stdio: ["ignore", "ignore", logFd], timeout: 45_000 },
+      // SIGKILL on timeout: a Chrome blocked on a system modal (e.g. a macOS
+      // keychain prompt) ignores the default SIGTERM and would hang forever.
+      { stdio: ["ignore", "ignore", logFd], timeout: 45_000, killSignal: "SIGKILL" },
     );
     if (!existsSync(workPng)) throw new Error("Chrome produced no output PNG");
     copyFileSync(workPng, out); // move it out of $TMPDIR with the caller's perms

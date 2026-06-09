@@ -68,10 +68,18 @@ test("fix leaves a clean icon untouched", () => {
   assert.equal(fix(ICON).changed, false);
 });
 
-test(
-  "render produces a transparent PNG",
-  { skip: resolveChrome() ? false : "no Chrome/Chromium found" },
-  () => {
+// macOS CI runners block headless Chrome on a keychain/login-session prompt that
+// has no GUI to answer (it hangs, ignoring SIGTERM). render is verified on the
+// Linux + Windows CI runners and locally on macOS, so we skip only the live
+// screenshot there — the pure doctor/fix logic above still runs on every OS.
+const renderSkip =
+  process.platform === "darwin" && process.env.CI
+    ? "live render skipped on macOS CI (headless Chrome blocks on the runner keychain); verified on Linux + Windows CI and locally"
+    : resolveChrome()
+      ? false
+      : "no Chrome/Chromium found";
+
+test("render produces a transparent PNG", { skip: renderSkip }, () => {
     const dir = mkdtempSync(join(tmpdir(), "svgsafe-test-"));
     try {
       const svg = join(dir, "in.svg");
