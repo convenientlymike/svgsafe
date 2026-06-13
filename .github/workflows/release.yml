@@ -1,0 +1,35 @@
+name: Publish to npm
+
+# Publishes to npm when you create a GitHub Release (or via manual dispatch).
+# One-time setup: create an npm "Automation" access token (npmjs.com → Access Tokens),
+# then add it as a repo secret:  gh secret set NPM_TOKEN --repo <owner>/<repo>
+# Publishes with provenance (id-token) so the package links back to this build.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # (tests already ran in CI on this commit; some repos' tests need a browser
+      #  the publish runner doesn't have — build + publish is enough here.)
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

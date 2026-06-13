@@ -16,6 +16,12 @@
   ],
   "license": "MIT",
   "author": "convenientlymike",
+  "homepage": "https://github.com/convenientlymike/svgsafe",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/convenientlymike/svgsafe.git"
+  },
+  "bugs": "https://github.com/convenientlymike/svgsafe/issues",
   "type": "module",
   "bin": {
     "svgsafe": "dist/cli.js"

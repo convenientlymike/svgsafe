@@ -10,6 +10,7 @@ diagram tools emit) looks perfect on desktop Chrome and **clips on iOS Safari**.
 transparent PNG that renders identically on every device.
 
 [![CI](https://github.com/convenientlymike/svgsafe/actions/workflows/ci.yml/badge.svg)](https://github.com/convenientlymike/svgsafe/actions/workflows/ci.yml)
+&nbsp;[![npm](https://img.shields.io/npm/v/svgsafe?logo=npm&color=CB3837&labelColor=09090F)](https://www.npmjs.com/package/svgsafe)
 &nbsp;![License](https://img.shields.io/badge/license-MIT-blue)
 &nbsp;![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 &nbsp;![Node](https://img.shields.io/badge/Node-%E2%89%A518-339933?logo=nodedotjs&logoColor=white)
